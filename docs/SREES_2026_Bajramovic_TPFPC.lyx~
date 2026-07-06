@@ -1,0 +1,1263 @@
+#LyX 2.5 created this file. For more info see https://www.lyx.org/
+\lyxformat 643
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{xcolor}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children no
+\language english
+\language_package default
+\inputencoding utf8
+\fontencoding auto
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_roman_osf false
+\font_sans_osf false
+\font_typewriter_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format pdf2
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize a4
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\crossref_package refstyle
+\use_formatted_ref 0
+\use_minted 0
+\use_lineno 0
+\backgroundcolor none
+\fontcolor none
+\notefontcolor lightgray
+\boxbgcolor red
+\table_border_color default
+\table_odd_row_color default
+\table_even_row_color default
+\table_alt_row_colors_start 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation 0bp
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tablestyle default
+\tracking_changes true
+\output_changes false
+\change_bars false
+\postpone_fragile_content true
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\docbook_table_output 0
+\docbook_mathml_prefix 1
+\docbook_mathml_version 0
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Konvertor trofaznih tokova snaga: polarne koordinate
+\end_layout
+
+\begin_layout Author
+SREES_2026_Bajramovic_TPFPC
+\end_layout
+
+\begin_layout Date
+Sarajevo, 2026.
+\end_layout
+
+\begin_layout Standard
+Univerzitet u Sarajevu
+\end_layout
+
+\begin_layout Standard
+Elektrotehnički fakultet
+\end_layout
+
+\begin_layout Standard
+Odsjek za automatiku i elektroniku
+\end_layout
+
+\begin_layout Standard
+Predmet: SREES
+\end_layout
+
+\begin_layout Standard
+Student: Bajramović Anesa
+\end_layout
+
+\begin_layout Standard
+Akronim projekta: TPFPC = Three Phase Flow Polar Converter
+\end_layout
+
+\begin_layout Section
+Sažetak
+\end_layout
+
+\begin_layout Standard
+Ovaj projekat predstavlja C++/natID aplikaciju za konverziju trofaznih MATPOWER power-flow podataka u dTwin model zapisan u polarnim koordinatama. Finalna funkcionalnost projekta nije samo jednostavna konverzija pojedinačnih P/Q vrijednosti, nego cjelovit tok u kojem se MATPOWER three-phase prototype .m fajl parsira, fizički trofazni bus se razvija u fazne čvorove A, B i C, formira se fazni Ybus sa međufaznim spregama, elementi admitansne matrice se prevode u polarni oblik, a zatim se generišu nelinearne jednačine tokova snaga u dTwin .dmodl formatu.
+\end_layout
+
+\begin_layout Standard
+Aplikacija ispunjava tražene tehničke uslove: implementirana je u C++, ima natID GUI, MATPOWER konverzija se izvršava u worker threadu, real-time progress indikator se osvježava u posebnom threadu, core funkcionalnost je dostupna i kroz ordinary DLL plugin, a dTwin import plugin omogućava pokretanje konverzije direktno iz dTwin okruženja. Stari P/Q konverter je zadržan kao pomoćni P/Q Demo tab za osnovnu demonstraciju konverzije iz P + jQ u polarni oblik.
+\end_layout
+
+\begin_layout Section
+Uvod
+\end_layout
+
+\begin_layout Standard
+Tokovi snaga su jedan od osnovnih problema u analizi elektroenergetskih sistema. U praksi je često potrebno znati kako se snaga raspoređuje kroz mrežu, kakvi su naponi po čvorovima, kolika su opterećenja vodova i kakav je uticaj generatora, potrošača, transformatora i vodova na rad mreže. Kod trofaznih mreža problem postaje složeniji, jer se ne posmatra samo jedan ekvivalentni čvor, nego se svaka faza može ponašati drugačije.
+\end_layout
+
+\begin_layout Standard
+Tema projekta, 'Konvertor trofaznih tokova snaga: polarne koordinate', povezuje dvije ideje. Prva je predstavljanje elektroenergetskog sistema preko MATPOWER podataka, posebno preko three-phase prototype formata. Druga je predstavljanje napona i admitansi u polarnom obliku, jer se u klasičnim jednačinama tokova snaga najčešće koriste moduli napona, fazni uglovi, moduli admitansi i uglovi admitansi. Zbog toga projekat ne pokušava zamijeniti dTwin solver, nego generiše model koji dTwin može dalje rješavati.
+\end_layout
+
+\begin_layout Section
+Cilj projekta
+\end_layout
+
+\begin_layout Standard
+Glavni cilj projekta je razviti alat koji iz MATPOWER three-phase prototype ulaza automatski pravi dTwin nelinearni model tokova snaga u polarnim koordinatama. Time se korisniku omogućava da polazni opis mreže, zapisan u poznatom MATPOWER stilu, pretvori u .dmodl model koji sadrži promjenljive, parametre i jednačine spremne za rješavanje u dTwin-u.
+\end_layout
+
+\begin_layout Standard
+Projekat obuhvata sljedeće cjeline:
+\end_layout
+
+\begin_layout Itemize
+C++ implementaciju parsera, modela i generatora .dmodl izlaza.
+\end_layout
+
+\begin_layout Itemize
+natID GUI sa glavnim MATPOWER PF Converter tabom i pomoćnim P/Q Demo tabom.
+\end_layout
+
+\begin_layout Itemize
+Worker thread za MATPOWER konverziju i poseban progress thread za prikaz napretka.
+\end_layout
+
+\begin_layout Itemize
+Ordinary DLL plugin koji izlaže funkciju tpfpcConvertMatpowerToDmodl.
+\end_layout
+
+\begin_layout Itemize
+dTwin import plugin koji se pojavljuje u dTwin meniju kao TPFPC MATPOWER Polar PF Converter.
+\end_layout
+
+\begin_layout Itemize
+Generisanje .dmodl modela i pratećeg .vmodl vizuelnog modela za prikaz napona po fazama.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: Glavni GUI aplikacije sa otvorenim MATPOWER PF Converter tabom. Slika treba pokazati izbor ulaznog .m fajla, izbor izlaznog .dmodl fajla i dugme za konverziju.]
+\end_layout
+
+\begin_layout Section
+Teorijska osnova
+\end_layout
+
+\begin_layout Subsection
+Tokovi snaga u elektroenergetskim sistemima
+\end_layout
+
+\begin_layout Standard
+Tokovi snaga opisuju raspodjelu aktivne i reaktivne snage u elektroenergetskoj mreži. U najjednostavnijem smislu, cilj proračuna tokova snaga je odrediti napone po čvorovima mreže i snage koje teku kroz elemente sistema. Takav proračun je važan jer operatoru ili inženjeru pokazuje da li su naponi u dozvoljenim granicama, da li su vodovi i transformatori preopterećeni i kako promjena potrošnje ili proizvodnje utiče na cijelu mrežu.
+\end_layout
+
+\begin_layout Standard
+U ovom projektu tokovi snaga nisu rješavani ručno unutar C++ programa Newton-Raphson metodom. Umjesto toga, C++ dio priprema nelinearni model u obliku koji dTwin može rješavati. To je važna arhitekturna odluka: projekat radi konverziju i generisanje modela, a dTwin preuzima ulogu numeričkog okruženja za rješavanje jednačina.
+\end_layout
+
+\begin_layout Subsection
+Aktivna, reaktivna i prividna snaga
+\end_layout
+
+\begin_layout Standard
+Kompleksna snaga se zapisuje kao S = P + jQ. Veličina P predstavlja aktivnu snagu, odnosno dio snage koji se pretvara u koristan rad, toplotu, svjetlost ili mehaničku energiju. Veličina Q predstavlja reaktivnu snagu, koja je povezana sa razmjenom energije između izvora i elektromagnetnih ili električnih polja induktivnih i kapacitivnih elemenata.
+\end_layout
+
+\begin_layout Standard
+Prividna snaga je modul kompleksne snage i računa se kao |S| = sqrt(P^2 + Q^2). Ugao kompleksne snage računa se kao angle = atan2(Q, P). U pomoćnom P/Q Demo tabu upravo se demonstrira ova osnovna konverzija. Međutim, glavna funkcionalnost finalne verzije projekta ide dalje: ona koristi MATPOWER mrežni opis, formira Ybus i generiše polarne jednačine tokova snaga.
+\end_layout
+
+\begin_layout Subsection
+Pravougaoni, kompleksni i polarni zapis
+\end_layout
+
+\begin_layout Standard
+Pravougaoni zapis kompleksne veličine koristi realnu i imaginarnu komponentu. Za kompleksnu snagu to su P i Q, a za admitansu to su G i B u zapisu Y = G + jB. Polarni zapis iste veličine koristi modul i ugao. Za admitansu se zato može pisati Y_ij = |Y_ij| angle theta_ij, gdje |Y_ij| predstavlja modul admitanse, a theta_ij njen fazni ugao.
+\end_layout
+
+\begin_layout Standard
+U polarnim jednačinama tokova snaga naponi se najčešće zapisuju preko modula V_i i ugla delta_i. Kada se mrežna admitansa Y_ij također zapiše preko modula i ugla, izrazi za aktivnu i reaktivnu snagu prirodno uključuju sinusne i kosinusne članove. Sinus i kosinus se pojavljuju zato što se množe kompleksni fazori napona i admitansi, a proizvod kompleksnih brojeva u polarnom obliku zavisi od razlike uglova.
+\end_layout
+
+\begin_layout Standard
+Tipičan oblik jednačina koje projekat generiše je:
+\end_layout
+
+\begin_layout LyX-Code
+P_i = sum_j V_i * V_j * Y_ij * cos(delta_i - theta_ij - delta_j)
+\end_layout
+
+\begin_layout LyX-Code
+Q_i = sum_j V_i * V_j * Y_ij * sin(delta_i - theta_ij - delta_j)
+\end_layout
+
+\begin_layout Standard
+U stvarnom .dmodl fajlu ovi izrazi se generišu za svaki neslack fazni čvor, pri čemu se za PQ čvorove generišu i P i Q jednačina, a za PV čvorove P jednačina i uslov zadane vrijednosti napona.
+\end_layout
+
+\begin_layout Section
+Trofazni sistemi i fazni čvorovi
+\end_layout
+
+\begin_layout Standard
+Trofazni sistem se sastoji od tri faze koje se u projektu označavaju kao A, B i C. U idealno balansiranom sistemu ove faze imaju jednake module i međusobno su pomjerene za 120 stepeni. U realnim distributivnim mrežama često se javljaju nebalansirana opterećenja, različite impedanse po fazama i međufazne sprege, pa je potrebno posmatrati svaku fazu posebno.
+\end_layout
+
+\begin_layout Standard
+Zbog toga projekat fizički trofazni bus ne tretira kao jedan skalarni čvor, nego ga razvija u tri fazna čvora. Na primjer, fizički bus 2 postaje 2A, 2B i 2C. Time se u modelu može razlikovati napon faze A na busu 2 od napona faze B ili C na istom fizičkom busu. Ovaj postupak je posebno važan za MATPOWER three-phase prototype format, jer ulazni fajl sadrži podatke po fazama.
+\end_layout
+
+\begin_layout LyX-Code
+int phaseBusId(int bus, int phaseIndex)
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    return kThreePhaseBusOffset + bus * 10 + phaseIndex + 1;
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak iz MatpowerPowerFlow.cpp pokazuje kako se fizički bus i indeks faze pretvaraju u interni ID faznog čvora. Kasnije se taj interni ID formatira nazad u čitljivo ime kao 1A, 1B, 1C, 2A i slično. To omogućava da model i .dmodl izlaz ostanu razumljivi korisniku.
+\end_layout
+
+\begin_layout Section
+MATPOWER three-phase prototype format
+\end_layout
+
+\begin_layout Standard
+MATPOWER je poznato okruženje za modeliranje i analizu elektroenergetskih sistema. Standardni MATPOWER slučajevi koriste polja kao što su mpc.bus, mpc.gen i mpc.branch. Za potrebe ovog projekta korišten je MATPOWER three-phase prototype stil, u kojem se pojavljuju polja kao što su mpc.bus3p, mpc.line3p, mpc.xfmr3p, mpc.load3p, mpc.gen3p i mpc.lc.
+\end_layout
+
+\begin_layout Standard
+Polje bus3p opisuje fizičke trofazne busove i početne vrijednosti napona po fazama. Polje line3p opisuje trofazne vodove, dok lc sadrži konstrukcijske podatke voda, odnosno impedansnu matricu sa vlastitim i međufaznim impedansama. Polje xfmr3p opisuje trofazne transformatore, load3p opisuje opterećenja po fazama, a gen3p generatore po fazama. Projekat ne implementira opšti MATLAB interpreter, nego ciljano podržava ovaj format relevantan za temu projekta, posebno stil primjera t_case3p_a.
+\end_layout
+
+\begin_layout LyX-Code
+if (!extractMatrixText(text, "bus3p", matrixText))
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    error = "Missing mpc.bus matrix";
+\end_layout
+
+\begin_layout LyX-Code
+    return false;
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+const auto busRows = parseMatrixRows(matrixText);
+\end_layout
+
+\begin_layout LyX-Code
+if (!parseBaseKva(text, parsedCase.baseKVA))
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    error = "Missing mpc.basekVA for MATPOWER three-phase case";
+\end_layout
+
+\begin_layout LyX-Code
+    return false;
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovaj dio parsera traži polje bus3p i basekVA. Ako ih nema, konverzija se zaustavlja sa jasnom greškom. To pokazuje da je parser namjenski vezan za MATPOWER three-phase prototype ulaz, a ne za proizvoljni MATLAB kod.
+\end_layout
+
+\begin_layout LyX-Code
+for (int phase = 0; phase < 3; ++phase)
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    tpfpc::matpower::Bus bus;
+\end_layout
+
+\begin_layout LyX-Code
+    bus.id = phaseBusId(busId, phase);
+\end_layout
+
+\begin_layout LyX-Code
+    bus.type = busType;
+\end_layout
+
+\begin_layout LyX-Code
+    bus.vm = row[3 + phase];
+\end_layout
+
+\begin_layout LyX-Code
+    bus.vaDeg = row[6 + phase];
+\end_layout
+
+\begin_layout LyX-Code
+    parsedCase.buses.push_back(bus);
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak pokazuje razvijanje jednog fizičkog busa iz bus3p matrice u tri fazna čvora. Vrijednosti napona i uglova se čitaju po fazama, pa se u internom modelu svaka faza može koristiti kao poseban čvor.
+\end_layout
+
+\begin_layout Section
+PQ, PV i slack čvorovi
+\end_layout
+
+\begin_layout Standard
+U proračunima tokova snaga čvorovi se obično klasifikuju kao PQ, PV ili slack čvorovi. PQ čvor ima zadatu aktivnu i reaktivnu snagu, a nepoznati su modul i ugao napona. PV čvor ima zadatu aktivnu snagu i modul napona, dok je reaktivna snaga rezultat proračuna. Slack čvor je referentni čvor mreže, sa zadatim modulom i uglom napona; on preuzima neravnotežu snaga u sistemu.
+\end_layout
+
+\begin_layout Standard
+U projektu se klasifikacija vrši tako da svaki fazni čvor pripada tačno jednoj kategoriji. Ako je generator neaktivan, on se ignoriše. Ako je bus označen kao PV, ali nema aktivan generator, takav čvor se tretira kao PQ. Time se izbjegava nelogična situacija u kojoj bi isti čvor istovremeno pripadao više kategorija.
+\end_layout
+
+\begin_layout Section
+Matrica admitansi Ybus
+\end_layout
+
+\begin_layout Standard
+Ybus matrica je centralna matrica u proračunu tokova snaga. Ona opisuje električnu povezanost čvorova mreže preko admitansi. Dijagonalni elementi Y_ii predstavljaju ukupnu admitansu viđenu iz čvora i, dok van-dijagonalni elementi Y_ij opisuju spregu između čvorova i i j. U trofaznom modelu Ybus nije samo matrica između fizičkih busova, nego između faznih čvorova, npr. 1A, 1B, 1C, 2A, 2B i tako dalje.
+\end_layout
+
+\begin_layout Standard
+Međufazne sprege nastaju kada impedansna matrica voda ima van-dijagonalne elemente. To znači da stanje jedne faze može uticati na drugu fazu. Zbog toga projekat koristi matricu impedansi 3x3 za vodove, invertuje je u admitansnu matricu i zatim upisuje doprinose u fazni Ybus.
+\end_layout
+
+\begin_layout LyX-Code
+const double zBaseOhm = (baseKvIt->second * baseKvIt->second / 3.0)
+\end_layout
+
+\begin_layout LyX-Code
+    / (parsedCase.baseKVA / 1000.0);
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+zPu[i][j] = constructionIt->second[i][j] * lengthMiles / zBaseOhm;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+ComplexMatrix3 ySeries = {};
+\end_layout
+
+\begin_layout LyX-Code
+if (!invertMatrix3(zPu, ySeries))
+\end_layout
+
+\begin_layout LyX-Code
+    return false;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+stampThreePhaseSeries(parsedCase, fromBus, toBus, ySeries);
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak pokazuje kako se impedanse voda skaliraju u per-unit sistem, zatim se impedansna matrica invertuje u admitansnu matricu, a onda se doprinos upisuje u globalni fazni Ybus. Funkcija stampThreePhaseSeries dodaje i dijagonalne i van-dijagonalne elemente, uključujući međufazne sprege.
+\end_layout
+
+\begin_layout Standard
+Ybus se čuva i kao dense struktura tokom formiranja, ali se za izlaz i izvještavanje koristi sparse prikaz. Sparse zapis je praktičan zato što je većina velikih mrežnih matrica rijetka: većina čvorova nije direktno povezana sa većinom drugih čvorova. Umjesto čuvanja mnogo nula, sparse zapis čuva samo nenulte elemente.
+\end_layout
+
+\begin_layout LyX-Code
+YbusEntry entry;
+\end_layout
+
+\begin_layout LyX-Code
+entry.rowBus = matpowerCase.buses[row].id;
+\end_layout
+
+\begin_layout LyX-Code
+entry.colBus = matpowerCase.buses[col].id;
+\end_layout
+
+\begin_layout LyX-Code
+entry.value = value;
+\end_layout
+
+\begin_layout LyX-Code
+entry.magnitude = std::abs(value);
+\end_layout
+
+\begin_layout LyX-Code
+entry.angleRad = std::atan2(value.imag(), value.real());
+\end_layout
+
+\begin_layout LyX-Code
+builtModel.ybusSparse.push_back(entry);
+\end_layout
+
+\begin_layout Standard
+Ovaj dio koda pretvara element Ybus matrice iz pravougaonog oblika G + jB u polarni oblik. Modul se računa pomoću std::abs, a ugao pomoću atan2 nad imaginarnim i realnim dijelom. Upravo ti polarni elementi se kasnije zapisuju kao Y_i_j i theta_i_j u .dmodl fajlu.
+\end_layout
+
+\begin_layout Section
+Nelinearne jednačine tokova snaga u polarnim koordinatama
+\end_layout
+
+\begin_layout Standard
+Kada su poznati topologija mreže, Ybus matrica i zadate injekcije snage, moguće je formirati nelinearne jednačine tokova snaga. U polarnom obliku nepoznate veličine su najčešće moduli napona V_i i uglovi delta_i. Za svaki neslack čvor generišu se jednačine zavisno od tipa čvora. Kod PQ čvora generišu se i aktivna i reaktivna jednačina, dok se kod PV čvora generiše aktivna jednačina i jednačina kojom se nameće zadani modul napona.
+\end_layout
+
+\begin_layout LyX-Code
+if (containsBus(model.pqBuses, bus.id))
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    out << "P_" << busName(bus.id) << " = "
+\end_layout
+
+\begin_layout LyX-Code
+        << powerExpression(model, bus.id, false) << "\n";
+\end_layout
+
+\begin_layout LyX-Code
+    out << "Q_" << busName(bus.id) << " = "
+\end_layout
+
+\begin_layout LyX-Code
+        << powerExpression(model, bus.id, true) << "\n";
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Funkcija powerExpression generiše desnu stranu jednačine na osnovu svih nenultih Ybus elemenata vezanih za dati čvor. U izrazu se koriste V_i, V_j, Y_i_j, theta_i_j, delta_i i delta_j. Time se iz MATPOWER mrežnih podataka dobija tekstualni .dmodl model sa nelinearnim jednačinama.
+\end_layout
+
+\begin_layout Section
+dTwin .dmodl model
+\end_layout
+
+\begin_layout Standard
+.dmodl je tekstualni model koji dTwin može učitati i riješiti. U ovom projektu .dmodl fajl sadrži Header sekciju, Model sekciju tipa NL, listu promjenljivih, listu parametara i listu nelinearnih jednačina. Promjenljive su V_i i delta_i za neslack fazne čvorove. Slack naponi i uglovi se zapisuju kao parametri, jer su referentni i fiksni.
+\end_layout
+
+\begin_layout LyX-Code
+out << "Model [type=NL domain=real eps=1e-8 name=\"PF in polar coordinates\"]:\n";
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+out << "Vars [out=true]:\n";
+\end_layout
+
+\begin_layout LyX-Code
+for (const auto& bus : model.inputCase.buses)
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    if (containsBus(model.slackBuses, bus.id))
+\end_layout
+
+\begin_layout LyX-Code
+        continue;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+    out << "\tdelta_" << busName(bus.id) << " = " << degToRad(bus.vaDeg) << "\n";
+\end_layout
+
+\begin_layout LyX-Code
+    out << "\tV_" << busName(bus.id) << " = " << bus.vm << "\n";
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak pokazuje početak generisanja .dmodl modela. Za svaki neslack fazni čvor generišu se promjenljive delta i V. Početne vrijednosti se uzimaju iz MATPOWER ulaza, a dTwin ih kasnije koristi kao početne pretpostavke za rješavanje nelinearnog modela.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: Dio generisanog t_case3p_a_output.dmodl fajla u kojem se vide V_2A, delta_2A, Y_1A_1B i theta_1A_1B.]
+\end_layout
+
+\begin_layout Section
+Arhitektura aplikacije
+\end_layout
+
+\begin_layout Standard
+Arhitektura projekta je slojevita. Najniži sloj čine strukture podataka i algoritmi za MATPOWER parser, formiranje Ybus matrice, klasifikaciju čvorova i generisanje .dmodl teksta. Iznad toga se nalazi ordinary DLL API koji omogućava da se ista konverzija pozove iz GUI-ja ili iz drugih programa. GUI sloj korisniku daje polja za izbor ulaza i izlaza, dugme za pokretanje i status konverzije. Poseban dTwin plugin sloj omogućava da se konverzija pokrene direktno iz dTwin-a.
+\end_layout
+
+\begin_layout Standard
+Glavni tok podataka je:
+\end_layout
+
+\begin_layout LyX-Code
+MATPOWER three-phase .m
+\end_layout
+
+\begin_layout LyX-Code
+-> parser
+\end_layout
+
+\begin_layout LyX-Code
+-> fazni cvorovi A/B/C
+\end_layout
+
+\begin_layout LyX-Code
+-> fazni Ybus sa medjufaznim spregama
+\end_layout
+
+\begin_layout LyX-Code
+-> polarni Ybus: |Y_ij| i theta_ij
+\end_layout
+
+\begin_layout LyX-Code
+-> nelinearne power-flow jednacine
+\end_layout
+
+\begin_layout LyX-Code
+-> dTwin .dmodl model
+\end_layout
+
+\begin_layout LyX-Code
+-> dTwin solver i prikaz rezultata
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI DIJAGRAM: Tok podataka MATPOWER .m -> parser -> fazni Ybus -> polarne jednačine -> .dmodl -> dTwin.]
+\end_layout
+
+\begin_layout Section
+Opis važnih fajlova implementacije
+\end_layout
+
+\begin_layout Subsection
+MatpowerPowerFlow.h
+\end_layout
+
+\begin_layout Standard
+MatpowerPowerFlow.h sadrži glavne strukture podataka za MATPOWER dio projekta. U njemu su definisani Bus, Generator, Branch, YbusContribution, MatpowerCase, YbusEntry, BusInjection i PowerFlowModel. Ovaj header predstavlja ugovor između parsera, model buildera, GUI-ja, DLL API-ja i dTwin plugina.
+\end_layout
+
+\begin_layout Subsection
+MatpowerPowerFlow.cpp
+\end_layout
+
+\begin_layout Standard
+MatpowerPowerFlow.cpp implementira najveći dio nove finalne funkcionalnosti. U njemu se čita MATPOWER fajl, izdvajaju se matrice, parsiraju three-phase polja, razvijaju se fizički busovi u fazne čvorove, formira se Ybus, računa sparse polarni zapis i generiše .dmodl i .vmodl izlaz. Ovaj fajl je jezgro MATPOWER-to-dTwin konverzije.
+\end_layout
+
+\begin_layout Subsection
+MatpowerPowerFlowView.h/.cpp
+\end_layout
+
+\begin_layout Standard
+MatpowerPowerFlowView predstavlja natID GUI tab za MATPOWER PF Converter. Korisnik u njemu bira ulazni .m fajl, bira ili prihvata izlazni .dmodl fajl, pokreće konverziju i vidi status, broj trofaznih busova, broj faznih čvorova, broj generatora, loadova, linija, transformatora i broj nenultih elemenata sparse Ybus matrice.
+\end_layout
+
+\begin_layout Subsection
+TpfpcPluginApi.h/.cpp
+\end_layout
+
+\begin_layout Standard
+TpfpcPluginApi.h i TpfpcPluginApi.cpp implementiraju ordinary DLL API. Stara funkcija tpfpcConvertThreePhase ostaje dostupna za P/Q Demo tab, dok nova funkcija tpfpcConvertMatpowerToDmodl poziva MATPOWER parser, gradi power-flow model i zapisuje .dmodl. Ovaj sloj odvaja core konverziju od GUI prikaza.
+\end_layout
+
+\begin_layout Subsection
+TpfpcDTwinPlugin.cpp
+\end_layout
+
+\begin_layout Standard
+TpfpcDTwinPlugin.cpp implementira dTwin import plugin. Plugin kreira mali GUI prozor unutar dTwin-a, omogućava izbor MATPOWER .m fajla i izlaznog .dmodl fajla, generiše digitalni model, upisuje ga u dTwin arhivu i poziva callback kojim dTwin učitava generisani model.
+\end_layout
+
+\begin_layout Subsection
+MainTabbedView.cpp
+\end_layout
+
+\begin_layout Standard
+MainTabbedView.cpp povezuje tabove glavne aplikacije. U finalnoj verziji projekta MATPOWER PF Converter je glavni tab, dok P/Q Demo ostaje pomoćni tab za demonstraciju osnovne konverzije P + jQ u polarni oblik.
+\end_layout
+
+\begin_layout Subsection
+MatpowerToDmodlTest.cpp
+\end_layout
+
+\begin_layout Standard
+MatpowerToDmodlTest.cpp je konzolni testni target. On se koristi za brzu provjeru konverzije bez pokretanja GUI-ja. Test učitava res/t_case3p_a.m, gradi model, generiše res/t_case3p_a_output.dmodl i ispisuje sažetak o broju busova, faznih čvorova i Ybus sparse nnz.
+\end_layout
+
+\begin_layout Subsection
+t_case3p_a.m i t_case3p_a_output.dmodl
+\end_layout
+
+\begin_layout Standard
+t_case3p_a.m je ulazni MATPOWER three-phase prototype primjer koji se koristi kao stabilan mali test slučaj. t_case3p_a_output.dmodl je generisani dTwin model. On nije ručno napisan model, nego rezultat rada parsera, Ybus formiranja i generatora polarnih jednačina.
+\end_layout
+
+\begin_layout Section
+GUI aplikacija
+\end_layout
+
+\begin_layout Standard
+Glavna aplikacija ima tab MATPOWER PF Converter. Korisnik prvo pokrene aplikaciju, zatim u polju MATPOWER .m fajl izabere ulazni fajl, na primjer res/t_case3p_a.m. U polju Izlazni .dmodl bira lokaciju generisanog dTwin modela. Nakon klika na Convert MATPOWER to Polar dTwin Model, aplikacija pokreće konverziju u pozadini i prikazuje status.
+\end_layout
+
+\begin_layout Standard
+Status nakon uspješne konverzije prikazuje baseMVA, broj trofaznih busova, broj faznih čvorova, broj generatora, broj loadova, broj linija, broj transformatora, listu PQ/PV/slack čvorova, Ybus sparse nnz i putanju izlaznog .dmodl fajla. Ove informacije služe kao brza validacija da je parser prepoznao ulaz i da je model generisan u očekivanom obliku.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: Status nakon uspješne konverzije. Slika treba pokazati 3-phase buses, phase nodes i Ybus sparse nnz.]
+\end_layout
+
+\begin_layout Standard
+P/Q Demo tab je zadržan kao pomoćna funkcionalnost. U njemu korisnik može unijeti P i Q po fazama i dobiti magnitude i uglove kompleksnih snaga. Ovaj tab je koristan za objašnjenje osnovne polarne konverzije, ali nije glavna funkcionalnost finalne verzije projekta.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: P/Q Demo tab sa balanced ili unbalanced primjerom. Slika treba pokazati da je P/Q konverter pomoćni dio projekta.]
+\end_layout
+
+\begin_layout Section
+Threading i progress indikator
+\end_layout
+
+\begin_layout Standard
+MATPOWER konverzija se ne izvršava direktno u GUI threadu. To je važno jer bi se u suprotnom GUI zamrznuo dok parser, Ybus formiranje i .dmodl export rade svoj posao. Umjesto toga, klik na dugme pokreće worker thread. Worker thread obavlja stvarnu konverziju, dok GUI thread ostaje zadužen za prikaz i reakciju na korisnički interfejs.
+\end_layout
+
+\begin_layout LyX-Code
+if (!beginOperation())
+\end_layout
+
+\begin_layout LyX-Code
+    return;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+_worker = std::thread(&MatpowerPowerFlowView::workerMethod,
+\end_layout
+
+\begin_layout LyX-Code
+    this, inputPath, outputPath);
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak iz MatpowerPowerFlowView.cpp pokazuje da se nakon validacije ulaznih putanja pokreće worker thread. Time se stvarna konverzija odvaja od GUI thread-a.
+\end_layout
+
+\begin_layout LyX-Code
+data.success = tpfpcConvertMatpowerToDmodl(
+\end_layout
+
+\begin_layout LyX-Code
+    inputPath.c_str(), outputPath.c_str(), &data.result) != 0;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+gui::thread::asyncExecInMainThread([this, data, viewAlive]()
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    if (!*viewAlive)
+\end_layout
+
+\begin_layout LyX-Code
+        return;
+\end_layout
+
+\begin_layout LyX-Code
+    finishConversion(data);
+\end_layout
+
+\begin_layout LyX-Code
+});
+\end_layout
+
+\begin_layout Standard
+Worker thread poziva ordinary DLL funkciju tpfpcConvertMatpowerToDmodl. Kada se konverzija završi, rezultat se vraća u glavni GUI thread preko gui::thread::asyncExecInMainThread. To je bitno zato što GUI kontrole treba mijenjati iz glavnog thread-a.
+\end_layout
+
+\begin_layout LyX-Code
+while (_progressThreadRunning && _operationInProgress)
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    const int target = _progressPercent.load();
+\end_layout
+
+\begin_layout LyX-Code
+    if (localPercent < target)
+\end_layout
+
+\begin_layout LyX-Code
+        localPercent += 5;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+    postProgress(static_cast<double>(localPercent) / 100.0,
+\end_layout
+
+\begin_layout LyX-Code
+        progressTextForPercent(localPercent));
+\end_layout
+
+\begin_layout LyX-Code
+    thread::sleepMilliSeconds(100);
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Drugi thread je progress thread. On periodično čita ciljnu vrijednost napretka i šalje osvježenje progress indikatora u GUI thread. Na taj način korisnik vidi da se konverzija odvija u realnom vremenu, umjesto da aplikacija samo čeka završetak operacije.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: Prikaz progress indikatora tokom MATPOWER konverzije. Slika treba pokazati da se konverzija izvršava u pozadini.]
+\end_layout
+
+\begin_layout Section
+Ordinary DLL plugin
+\end_layout
+
+\begin_layout Standard
+DLL je dinamička biblioteka, odnosno kompajlirani modul koji drugi program može učitati i pozvati u toku rada. U ovom projektu ordinary DLL plugin služi kao odvojeni C API sloj za core konverzije. Prednost takvog sloja je da se ista funkcionalnost može koristiti iz GUI-ja, testova ili potencijalno drugih programa, bez direktnog vezivanja za GUI klase.
+\end_layout
+
+\begin_layout Standard
+Najvažnija nova funkcija ordinary DLL-a je tpfpcConvertMatpowerToDmodl. Ona prima putanju ulaznog MATPOWER fajla, putanju izlaznog .dmodl fajla i strukturu rezultata. Funkcija vraća uspjeh ili grešku, a u rezultatu popunjava status, brojeve čvorova, broj nenultih Ybus elemenata i putanju izlaza.
+\end_layout
+
+\begin_layout LyX-Code
+int tpfpcConvertMatpowerToDmodl(const char* inputPath,
+\end_layout
+
+\begin_layout LyX-Code
+    const char* outputPath, TpfpcMatpowerResult* result)
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    tpfpc::matpower::MatpowerCase matpowerCase;
+\end_layout
+
+\begin_layout LyX-Code
+    if (!tpfpc::matpower::loadCase(inputFile, matpowerCase, error))
+\end_layout
+
+\begin_layout LyX-Code
+        return 0;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+    tpfpc::matpower::PowerFlowModel model;
+\end_layout
+
+\begin_layout LyX-Code
+    if (!tpfpc::matpower::buildPowerFlowModel(matpowerCase, model, error))
+\end_layout
+
+\begin_layout LyX-Code
+        return 0;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+    if (!tpfpc::matpower::writeDmodl(model, inputFile, outputFile, error))
+\end_layout
+
+\begin_layout LyX-Code
+        return 0;
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+    fillMatpowerResult(model, outputFile, *result);
+\end_layout
+
+\begin_layout LyX-Code
+    return 1;
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovaj isječak prikazuje kompletan tok ordinary DLL funkcije: učitavanje MATPOWER slučaja, izgradnja power-flow modela, pisanje .dmodl fajla i popunjavanje rezultata. Stara funkcija tpfpcConvertThreePhase ostaje u projektu za P/Q Demo tab, ali glavna funkcionalnost je sada MATPOWER konverzija.
+\end_layout
+
+\begin_layout Section
+dTwin plugin i integracija
+\end_layout
+
+\begin_layout Standard
+dTwin je okruženje u kojem se generisani nelinearni model može otvoriti, provjeriti i riješiti. dTwin import plugin je DLL koji dTwin pronalazi i učitava kroz svoj plugin mehanizam. U meniju Model -> Import plugin se pojavljuje kao TPFPC MATPOWER Polar PF Converter. Kada korisnik odabere tu stavku, otvara se plugin prozor za izbor MATPOWER .m fajla i izlaznog .dmodl fajla.
+\end_layout
+
+\begin_layout Standard
+Plugin implementira sc::IPlugin i eksportuje getPluginInterface. To je ulazna funkcija koju dTwin traži prilikom učitavanja plugin DLL-a. Kroz taj interfejs dTwin saznaje naziv plugin menija, tip modela i način kreiranja import prozora.
+\end_layout
+
+\begin_layout LyX-Code
+extern "C"
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+PLUGIN_API sc::IPlugin* getPluginInterface()
+\end_layout
+
+\begin_layout LyX-Code
+{
+\end_layout
+
+\begin_layout LyX-Code
+    return &s_plugin;
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout LyX-Code
+}
+\end_layout
+
+\begin_layout Standard
+Ovo je minimalni export potreban da dTwin može dobiti pokazivač na plugin objekat. Bez ove funkcije dTwin ne bi znao kako da pristupi pluginu.
+\end_layout
+
+\begin_layout LyX-Code
+const auto dmodlContent = tpfpc::matpower::createDmodl(model, inputPath);
+\end_layout
+
+\begin_layout LyX-Code
+writeArchive(getArchive(ArchType::DigitalModel), dmodlContent);
+\end_layout
+
+\begin_layout LyX-Code
+\end_layout
+
+\begin_layout LyX-Code
+const auto visualModelContent =
+\end_layout
+
+\begin_layout LyX-Code
+    tpfpc::matpower::createVoltagePhaseVisualModel(model);
+\end_layout
+
+\begin_layout LyX-Code
+if (!visualModelContent.empty())
+\end_layout
+
+\begin_layout LyX-Code
+    writeArchive(getArchive(ArchType::VisualModel), visualModelContent);
+\end_layout
+
+\begin_layout Standard
+Ovaj dio dTwin plugina pokazuje kako se generisani .dmodl sadržaj predaje dTwin-u kao digitalni model. Ako je slučaj trofazni, generiše se i vizuelni model za prikaz magnitude i uglova napona po fazama.
+\end_layout
+
+\begin_layout Standard
+Plugin DLL je predviđeno kopirati u korisnički plugin folder C:/Users/Korisnik/ba.natID/plugins. Ako dTwin instalacija učitava plugin iz Program Files foldera, potrebno je zatvoriti dTwin prije kopiranja, jer Windows ne dozvoljava prepisivanje DLL fajla koji je trenutno učitan.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: dTwin meni u kojem se vidi TPFPC MATPOWER Polar PF Converter plugin.]
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: dTwin plugin prozor sa ulaznim MATPOWER .m fajlom i izlaznim .dmodl fajlom.]
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: Otvoren dTwin model nakon učitavanja generisanog .dmodl fajla.]
+\end_layout
+
+\begin_layout Section
+Vizuelni prikaz napona po fazama
+\end_layout
+
+\begin_layout Standard
+Pored .dmodl modela, projekat generiše i .vmodl vizuelni model za dTwin. Cilj ovog prikaza nije da zamijeni power-flow jednačine, nego da olakša interpretaciju rezultata. Za trofazni test slučaj korisno je vidjeti kako se modul napona mijenja po fazama A, B i C kroz fizičke busove mreže. Zbog toga su uvedene pomoćne izlazne veličine busIdPlot, vMagPlotA, vMagPlotB, vMagPlotC, anglePlotA, anglePlotB i anglePlotC.
+\end_layout
+
+\begin_layout LyX-Code
+linePlot [xLabel="Bus" yLabel="|V| [p.u.]"
+\end_layout
+
+\begin_layout LyX-Code
+    name="Voltage magnitude by phase"]:
+\end_layout
+
+\begin_layout LyX-Code
+    @x << busIdPlot
+\end_layout
+
+\begin_layout LyX-Code
+    @y << vMagPlotA [name="A"]
+\end_layout
+
+\begin_layout LyX-Code
+    @y << vMagPlotB [name="B"]
+\end_layout
+
+\begin_layout LyX-Code
+    @y << vMagPlotC [name="C"]
+\end_layout
+
+\begin_layout LyX-Code
+end
+\end_layout
+
+\begin_layout Standard
+Vizuelni model crta tri krive, jednu za svaku fazu. X-osa predstavlja fizički bus, dok y-osa predstavlja modul napona u per-unit vrijednostima. Drugi graf koristi isti princip za uglove napona u stepenima.
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: dTwin graf Voltage magnitude by phase nakon rješavanja modela.]
+\end_layout
+
+\begin_layout Standard
+
+\size large
+\color red
+[OVDJE UBACITI SLIKU: dTwin graf Voltage angle by phase nakon rješavanja modela.]
+\end_layout
+
+\begin_layout Section
+Testiranje i validacija
+\end_layout
+
+\begin_layout Standard
+Za validaciju je korišten mali MATPOWER three-phase prototype slučaj res/t_case3p_a.m. Ovaj test je važan jer pokriva glavne dijelove finalne funkcionalnosti: parsiranje three-phase polja, razvijanje busova u fazne čvorove, formiranje faznog Ybus-a, polarni zapis Ybus elemenata i generisanje .dmodl modela.
+\end_layout
+
+\begin_layout LyX-Code
+Release ALL_BUILD: OK
+\end_layout
+
+\begin_layout LyX-Code
+MatpowerToDmodlTest: OK
+\end_layout
+
+\begin_layout LyX-Code
+Input: res/t_case3p_a.m
+\end_layout
+
+\begin_layout LyX-Code
+Output: res/t_case3p_a_output.dmodl
+\end_layout
+
+\begin_layout LyX-Code
+3-phase buses: 4
+\end_layout
+
+\begin_layout LyX-Code
+phase nodes: 12
+\end_layout
+
+\begin_layout LyX-Code
+3-phase generators: 1
+\end_layout
+
+\begin_layout LyX-Code
+3-phase loads: 1
+\end_layout
+
+\begin_layout LyX-Code
+3-phase lines: 2
+\end_layout
+
+\begin_layout LyX-Code
+3-phase transformers: 1
+\end_layout
+
+\begin_layout LyX-Code
+Ybus sparse nnz: 78
+\end_layout
+
+\begin_layout Standard
+Rezultat 3-phase buses: 4 znači da su u ulaznom MATPOWER fajlu pronađena četiri fizička trofazna busa. Rezultat phase nodes: 12 znači da je svaki fizički bus razvijen u tri fazna čvora, pa se ukupno dobija 4 x 3 = 12 faznih čvorova. Broj generatora, loadova, linija i transformatora pokazuje da su odgovarajuća three-phase polja uspješno prepoznata. Ybus sparse nnz: 78 znači da fazni Ybus ima 78 nenultih elemenata, uključujući direktne veze i međufazne sprege.
+\end_layout
+
+\begin_layout Standard
+dTwin test pokazuje da se generisani .dmodl može otvoriti u dTwin-u bez sintaksnih grešaka i da dTwin može pokrenuti rješavanje modela. Time je potvrđeno da C++ konverter ne generiše samo tekstualni fajl, nego model koji je kompatibilan sa dTwin workflowom.
+\end_layout
+
+\begin_layout Section
+Ograničenja implementacije
+\end_layout
+
+\begin_layout Standard
+Implementacija je fokusirana na format relevantan za temu projekta, odnosno MATPOWER three-phase prototype case, a ne na opšti MATLAB interpreter. To znači da projekat ne podržava sve moguće MATLAB izraze, funkcije, skripte i sve varijante MATPOWER slučajeva. Parser ciljano traži i obrađuje polja kao što su bus3p, line3p, xfmr3p ili xfrm3p, load3p, gen3p, shunt3p i lc.
+\end_layout
+
+\begin_layout Standard
+Ovo ograničenje je namjerno i profesionalno prihvatljivo za obim projekta. Cilj nije napraviti opšti MATLAB parser, nego stabilan end-to-end tok za trofazni MATPOWER primjer i generisanje dTwin modela u polarnim koordinatama. U budućem radu podrška se može proširiti na više MATPOWER varijanti, dodatne elemente mreže i detaljniju validaciju nad većim test sistemima.
+\end_layout
+
+\begin_layout Standard
+Također, projekat ne implementira vlastiti Newton-Raphson solver. Umjesto toga generiše nelinearne jednačine i prepušta njihovo rješavanje dTwin-u. Time projekat ostaje fokusiran na svoju osnovnu temu: konverziju MATPOWER trofaznog opisa u polarni dTwin power-flow model.
+\end_layout
+
+\begin_layout Section
+Zaključak
+\end_layout
+
+\begin_layout Standard
+Finalna verzija projekta SREES_2026_Bajramovic_TPFPC predstavlja trofazni MATPOWER-to-dTwin polarni power-flow konverter. Projekat učitava MATPOWER three-phase prototype fajl, razvija fizičke trofazne busove u fazne čvorove A/B/C, formira fazni Ybus sa međufaznim spregama, prevodi nenulte Ybus elemente u polarni oblik i generiše nelinearne jednačine tokova snaga u .dmodl formatu.
+\end_layout
+
+\begin_layout Standard
+Pored core konverzije, projekat sadrži natID GUI, worker/progress thread arhitekturu, ordinary DLL plugin i dTwin import plugin. Time su ispunjeni glavni tehnički zahtjevi projekta: C++ implementacija, GUI, konverzija u posebnom threadu, real-time progress indikator u drugom threadu, DLL plugin i dTwin integracija. P/Q Demo tab ostaje koristan pomoćni prikaz osnovne polarne konverzije, ali glavna vrijednost projekta je automatsko generisanje dTwin power-flow modela iz trofaznog MATPOWER ulaza.
+\end_layout
+
+\begin_layout Section
+Literatura
+\end_layout
+
+\begin_layout Itemize
+MATPOWER dokumentacija za three-phase prototype format i primjer t_case3p_a.
+\end_layout
+
+\begin_layout Itemize
+MATPOWER GitHub repozitorij, folder lib/t sa testnim slučajevima.
+\end_layout
+
+\begin_layout Itemize
+natID SDK dokumentacija i lokalni natID primjeri za GUI, matrice, thread-safe GUI update i plugin obrasce.
+\end_layout
+
+\begin_layout Itemize
+dTwin lokalni primjeri za import plugin, sc::IPlugin interfejs i getPluginInterface export.
+\end_layout
+
+\begin_layout Itemize
+C++ dokumentacija za std::thread, std::complex, std::filesystem i standardne matematičke funkcije.
+\end_layout
+
+\begin_layout Itemize
+CMake dokumentacija za build targete, DLL targete i Visual Studio generator.
+\end_layout
+
+\begin_layout Section
+Mjesta za slike
+\end_layout
+
+\begin_layout Standard
+Sljedeće slike treba ubaciti prije predaje izvještaja:
+\end_layout
+
+\begin_layout Itemize
+Glavni GUI sa otvorenim MATPOWER PF Converter tabom.
+\end_layout
+
+\begin_layout Itemize
+Progress indikator tokom MATPOWER konverzije.
+\end_layout
+
+\begin_layout Itemize
+Status nakon uspješne konverzije, uključujući 3-phase buses, phase nodes i Ybus sparse nnz.
+\end_layout
+
+\begin_layout Itemize
+Dio generisanog t_case3p_a_output.dmodl fajla sa V_2A, delta_2A, Y_1A_1B i theta_1A_1B.
+\end_layout
+
+\begin_layout Itemize
+dTwin meni Model -> Import sa TPFPC MATPOWER Polar PF Converter pluginom.
+\end_layout
+
+\begin_layout Itemize
+dTwin plugin prozor za izbor ulaznog .m i izlaznog .dmodl fajla.
+\end_layout
+
+\begin_layout Itemize
+Otvoren dTwin model nakon učitavanja generisanog .dmodl fajla.
+\end_layout
+
+\begin_layout Itemize
+dTwin graf Voltage magnitude by phase.
+\end_layout
+
+\begin_layout Itemize
+dTwin graf Voltage angle by phase.
+\end_layout
+
+\end_body
+
+\end_document

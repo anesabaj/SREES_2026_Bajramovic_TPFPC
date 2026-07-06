@@ -1,0 +1,460 @@
+%% LyX 2.5.1 created this file.  For more info, see https://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[12pt,a4paper,english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\setlength{\parindent}{0bp}
+\usepackage{color}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\special{papersize=\the\paperwidth,\the\paperheight}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+\newenvironment{lyxcode}
+	{\par\begin{list}{}{
+		\setlength{\rightmargin}{\leftmargin}
+		\setlength{\listparindent}{0pt}% needed for AMS classes
+		\raggedright
+		\setlength{\itemsep}{0pt}
+		\setlength{\parsep}{0pt}
+		\normalfont\ttfamily}%
+	 \item[]}
+	{\end{list}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\usepackage{xcolor}
+
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+\title{Konvertor trofaznih tokova snaga: polarne koordinate}
+\author{SREES\_2026\_Bajramovic\_TPFPC}
+\date{Sarajevo, 2026.}
+
+\maketitle
+Univerzitet u Sarajevu
+
+Elektrotehnički fakultet
+
+Odsjek za automatiku i elektroniku
+
+Predmet: SREES
+
+Akronim: TPFPC, Three Phase Flow Polar Converter
+
+Student: Bajramović Anesa
+\begin{abstract}
+Ovaj izvještaj opisuje projekat SREES\_2026\_Bajramovic\_TPFPC, C++/natID
+aplikaciju za konverziju trofaznih kompleksnih snaga iz pravougaonog
+oblika P+jQ u polarni oblik |S| i ugao izražen u stepenima. Projekat
+obuhvata glavni natID GUI, balanced i unbalanced režim rada, tok podataka
+kroz dense i sparse matrice, worker/progress threadove, obični DLL
+plugin i dTwin import plugin koji generiše .dmodl model. Projekat
+nije puni load-flow solver; fokus je isključivo na konverziji poznatih
+P/Q vrijednosti u polarne koordinate.
+\end{abstract}
+
+\section{Uvod}
+
+Kompleksna snaga se u elektroenergetskim sistemima često zapisuje
+u obliku P+jQ, gdje P predstavlja aktivnu, a Q reaktivnu komponentu.
+Za prikaz, poređenje i dalju obradu rezultata često je praktičnije
+koristiti polarni oblik, odnosno magnitudu i ugao. U trofaznim sistemima
+dodatno je važno podržati i balansirane i nebalansirane ulaze, jer
+realni sistemi ne moraju imati jednake vrijednosti po fazama.
+
+TPFPC je zbog toga zamišljen kao čisti konverter: korisnik unosi P/Q
+vrijednosti po fazama, a aplikacija računa magnitude, uglove i totalne
+vrijednosti. U projektu se ne implementira Newton-Raphson solver i
+ne koristi se Ybus demo kao dio finalne funkcionalnosti.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: GUI glavne natID aplikacije{]}}}{\large\par}
+
+\section{Cilj projekta}
+
+Cilj projekta je izrada C++/natID alata za trofaznu konverziju P+jQ
+u polarne koordinate. Projekat obuhvata:
+\begin{itemize}
+\item C++ implementaciju matematičke logike za konverziju.
+\item natID GUI za unos i prikaz rezultata.
+\item Balanced i unbalanced trofazni unos.
+\item Konverziju u posebnom worker threadu.
+\item Progress indikator koji se osvježava iz posebnog progress threada.
+\item natID dense i sparse matrice kao stvarni dio toka podataka.
+\item Obični DLL plugin za izdvajanje core konverzije.
+\item dTwin import plugin koji generiše .dmodl model.
+\item CMake build konfiguraciju.
+\end{itemize}
+
+\section{Teorijska osnova}
+
+Za svaku fazu se kompleksna snaga zapisuje kao:
+\begin{lyxcode}
+Sa~=~Pa~+~jQa
+
+Sb~=~Pb~+~jQb
+
+Sc~=~Pc~+~jQc
+\end{lyxcode}
+Konverzija jedne faze iz pravougaonog u polarni oblik računa se formulama:
+\begin{lyxcode}
+|S|~=~sqrt(P\textasciicircum 2~+~Q\textasciicircum 2)
+
+angleDeg~=~atan2(Q,~P)~{*}~180~/~pi
+\end{lyxcode}
+Za totalne vrijednosti koristi se zbir po fazama:
+\begin{lyxcode}
+Ptotal~=~Pa~+~Pb~+~Pc
+
+Qtotal~=~Qa~+~Qb~+~Qc
+
+|Stotal|~=~sqrt(Ptotal\textasciicircum 2~+~Qtotal\textasciicircum 2)
+
+angleTotal~=~atan2(Qtotal,~Ptotal)~{*}~180~/~pi
+\end{lyxcode}
+
+\section{Balanced i unbalanced režim}
+
+U balanced režimu korisnik unosi samo vrijednosti za fazu A. Vrijednosti
+faza B i C se zatim interno popunjavaju istim P/Q vrijednostima. Ovaj
+režim je koristan kada su sve tri faze jednake i kada nije potrebno
+ručno ponavljati isti unos.
+
+U unbalanced režimu korisnik unosi P/Q vrijednosti za sve tri faze
+posebno. Ovaj režim odgovara realnijim situacijama u kojima faze A,
+B i C mogu imati različite aktivne i reaktivne komponente.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: Balanced režim{]}}}{\large\par}
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: Unbalanced režim{]}}}{\large\par}
+
+\section{Arhitektura aplikacije}
+
+Tok podataka u aplikaciji je organizovan tako da se GUI unos prvo
+pretvara u matricni model, zatim se provodi konverzija i na kraju
+se rezultati prikazuju u GUI-ju ili zapisuju u dTwin .dmodl izlaz.
+\begin{lyxcode}
+GUI~input
+
+->~dense~input~matrix~3x2
+
+->~sparse~input~matrix~3x2
+
+->~PolarConverter
+
+->~dense~output~matrix~3x2
+
+->~sparse~output~matrix~3x2
+
+->~GUI~rezultat~/~dTwin~.dmodl~output
+\end{lyxcode}
+{\large\textcolor{red}{{[}OVDJE UBACITI DIJAGRAM: tok podataka GUI
+-> matrice -> konverter -> rezultat{]}}}{\large\par}
+
+\section{Implementacija u C++/natID}
+
+Implementacija je podijeljena u više manjih fajlova, tako da je matematička
+logika odvojena od GUI-ja, matrica i plugin slojeva.
+\begin{description}
+\item [{PowerFlowTypes.h}] Definiše osnovne strukture za pravougaoni i
+polarni zapis snage.
+\item [{PolarConverter.h/.cpp}] Implementira formulu za magnitudu, ugao
+u radijanima i ugao u stepenima.
+\item [{PowerFlowMatrixModel.h/.cpp}] Povezuje ulazne P/Q vrijednosti,
+dense matrice, sparse matrice, konverziju i totalne rezultate.
+\item [{PowerFlowView.h/.cpp}] Implementira glavni natID GUI, validaciju
+unosa, balanced/unbalanced režim, worker thread i progress thread.
+\item [{MatricesView.h/.cpp}] Predviđen je za prikaz matrica u posebnom
+tabu.
+\item [{TpfpcPluginApi.h/.cpp}] Definiše obični DLL C API sloj za pozivanje
+core konverzije.
+\item [{TpfpcDTwinPlugin.h/.cpp}] Implementira dTwin import plugin, prozor
+za unos i generisanje .dmodl modela.
+\end{description}
+
+\subsection{Kodni isječak: formula u PolarConverter}
+
+Fajl: PolarConverter.cpp
+\begin{lyxcode}
+polarPower.magnitude~=~std::sqrt(power.p~{*}~power.p~+~power.q~{*}~power.q);
+
+polarPower.angleRad~=~std::atan2(power.q,~power.p);
+
+polarPower.angleDeg~=~polarPower.angleRad~{*}~180.0~/~pi;
+\end{lyxcode}
+Ovaj kod direktno implementira osnovnu matematičku formulu projekta.
+Bitan je zato što se na njemu zasnivaju rezultati za sve faze, totalne
+vrijednosti, plugin rezultat i dTwin .dmodl izlaz.
+
+\subsection{Kodni isječak: balanced/unbalanced logika}
+
+Fajl: PowerFlowView.cpp
+\begin{lyxcode}
+if~(isBalancedMode())
+
+\{
+
+~~~~input.phaseB~=~input.phaseA;
+
+~~~~input.phaseC~=~input.phaseA;
+
+~~~~return~true;
+
+\}
+\end{lyxcode}
+Ovaj isječak pokazuje da se u balanced režimu vrijednosti faze A koriste
+i za faze B i C. Ako balanced režim nije uključen, kod nastavlja čitati
+ručne P/Q vrijednosti za faze B i C, što pokriva unbalanced režim.
+
+\section{Dense i sparse matrice}
+
+Dense input matrix je matrica dimenzija 3x2. Redovi predstavljaju
+faze A, B i C, a kolone predstavljaju P i Q. Dense output matrix je
+također 3x2, ali kolone predstavljaju magnitude i angleDeg.
+
+Sparse input i sparse output matrice čuvaju nenulte vrijednosti iz
+ulaznog i izlaznog toka podataka. Ove matrice nisu demonstrativni
+Ybus i ne predstavljaju load-flow mrežni model. One su dio stvarnog
+toka konverzije P/Q vrijednosti u polarne koordinate.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: Matrices tab{]}}}{\large\par}
+
+\subsection{Kodni isječak: dense input/output i sparse nnz}
+
+Fajl: PowerFlowMatrixModel.cpp
+\begin{lyxcode}
+auto~input~=~result.inputMatrix.getManipulator();
+
+input(kPhaseA,~kPColumn)~=~rectangularPower.phaseA.p;
+
+input(kPhaseA,~kQColumn)~=~rectangularPower.phaseA.q;
+
+const~auto~phaseA~=~\_converter.convertPhase(\{input(kPhaseA,~kPColumn),~input(kPhaseA,~kQColumn)\});
+
+writePolarToMatrix(result.polarMatrix,~kPhaseA,~phaseA);
+
+addSparseValue(sparseInput,~kPhaseA,~kPColumn,~input(kPhaseA,~kPColumn),~result.sparseInputNonZeroCount);
+
+addSparseValue(sparseOutput,~kPhaseA,~kMagnitudeColumn,~polar(kPhaseA,~kMagnitudeColumn),~result.sparseOutputNonZeroCount);
+\end{lyxcode}
+Ovaj kod pokazuje kako se ulaz prvo zapisuje u dense matricu, zatim
+se konvertuje preko PolarConverter-a i rezultat upisuje u dense output
+matricu. Pozivi addSparseValue broje i zapisuju samo nenulte vrijednosti,
+što je bitno za validaciju sparse toka podataka.
+
+\section{Threading i progress indikator}
+
+Glavna aplikacija koristi odvojeni worker thread za konverziju i progress
+thread za osvježavanje indikatora napretka. Pošto se GUI elementi
+ne smiju direktno mijenjati iz pozadinskih threadova, update se šalje
+u glavni GUI thread preko gui::thread::asyncExecInMainThread.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI DIJAGRAM: worker thread +
+progress thread + GUI main thread{]}}}{\large\par}
+
+\subsection{Kodni isječak: worker/progress thread i thread-safe GUI update}
+
+Fajl: PowerFlowView.cpp
+\begin{lyxcode}
+\_worker~=~std::thread(\&PowerFlowView::workerMethod,~this,~input);
+
+\_progressThread~=~std::thread(\&PowerFlowView::progressMethod,~this);
+
+gui::thread::asyncExecInMainThread({[}this,~displayData,~viewAlive{]}()
+
+\{
+
+~~~~if~(!{*}viewAlive)
+
+~~~~~~~~return;
+
+~~~~finishConversion(displayData);
+
+\});
+\end{lyxcode}
+Ovaj isječak pokazuje osnovnu podjelu posla: konverzija ide u worker
+thread, a progress se računa odvojeno. Završni prikaz rezultata se
+prebacuje u glavni GUI thread, čime se poštuje natID pattern za siguran
+GUI update.
+
+\section{DLL plugin}
+
+Ordinary DLL plugin predstavlja odvojeni C API sloj koji omogućava
+pozivanje core konverzije bez direktnog korištenja GUI klase. Na taj
+način se ista logika može koristiti iz glavne aplikacije i iz drugih
+slojeva.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU ILI DIJAGRAM: ordinary
+DLL plugin tok{]}}}{\large\par}
+
+\subsection{Kodni isječak: ordinary DLL API}
+
+Fajl: TpfpcPluginApi.cpp
+\begin{lyxcode}
+int~tpfpcConvertThreePhase(const~TpfpcPluginInput{*}~input,~TpfpcPluginResult{*}~result)
+
+\{
+
+~~~~tpfpc::PowerFlowMatrixModel~matrixModel;
+
+~~~~const~auto~conversionResult~=~matrixModel.convert(rectangularPower);
+
+~~~~auto~polar~=~conversionResult.polarMatrix.getManipulator();
+
+~~~~result->phaseA~=~makePluginPolarPower(polar(0,~0),~polar(0,~1));
+
+~~~~return~1;
+
+\}
+\end{lyxcode}
+Ovaj API prima ulaznu strukturu sa P/Q vrijednostima i puni izlaznu
+strukturu sa polarnim rezultatima. Bitan je jer razdvaja core konverziju
+od GUI-ja i omogućava plugin upotrebu.
+
+\section{dTwin plugin}
+
+dTwin import plugin implementira sc::IPlugin, eksportuje getPluginInterface
+i u dTwin aplikaciji se pojavljuje pod Model -> Import kao TPFPC Default
+Converter. Nakon unosa P/Q vrijednosti plugin generiše .dmodl model
+koji sadrži rezultate konverzije.
+
+Plugin se kopira u:
+\begin{lyxcode}
+C:
+\end{lyxcode}
+U toku lokalnog testiranja je utvrđeno da instalirani dTwin može učitati
+i kopiju iz Program Files plugin foldera. Zbog toga je za demonstraciju
+korištena ažurirana DLL kopija, uz prethodni backup stare DLL datoteke.
+Ovo ne mijenja osnovni kod projekta.
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: dTwin Model -> Import
+meni{]}}}{\large\par}
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: dTwin TPFPC plugin
+prozor{]}}}{\large\par}
+
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU: generisani .dmodl model
+u dTwin-u{]}}}{\large\par}
+
+\subsection{Kodni isječak: dTwin export i callback}
+
+Fajl: TpfpcDTwinPlugin.cpp
+\begin{lyxcode}
+extern~\textquotedbl C\textquotedbl{}
+
+\{
+
+PLUGIN\_API~sc::IPlugin{*}~getPluginInterface()
+
+\{
+
+~~~~return~\&s\_plugin;
+
+\}
+
+\}
+\end{lyxcode}
+Ovo je ulazna tačka koju dTwin loader traži u plugin DLL-u. Funkcija
+vraća statički plugin objekat koji implementira sc::IPlugin interfejs.
+
+\subsection{Kodni isječak: generisanje .dmodl i završetak import workflow-a}
+
+Fajl: TpfpcDTwinPlugin.cpp
+\begin{lyxcode}
+const~auto~displayData~=~convertPowerFlow(rectangularPower);
+
+const~auto~dmodlContent~=~createDmodlContent(displayData);
+
+writeArchive(getArchive(ArchType::DigitalModel),~dmodlContent);
+
+fileOut~<\textcompwordmark <~dmodlContent;
+
+if~(\_onComplete)
+
+~~~~\_onComplete(\_pPlugin);
+\end{lyxcode}
+Ovaj dio povezuje lokalnu konverziju sa dTwin import mehanizmom. .dmodl
+sadržaj se zapisuje u digitalni archive i u izlazni fajl, a \_onComplete
+obavještava dTwin da je import završen.
+
+\section{Testiranje i validacija}
+
+Za osnovnu provjeru koriste se balanced i unbalanced primjeri. Balanced
+test provjerava da se faza A kopira u B i C, dok unbalanced test provjerava
+da se sve tri faze mogu zadati nezavisno.
+
+MATPOWER se koristi samo kao izvor referentnih P/Q podataka. Projekat
+ne poredi rezultate sa cijelim MATPOWER solverom i nije MATPOWER parser.
+Validirani dio je isključivo konverzija poznatih P/Q vrijednosti u
+polarni oblik.
+
+MATPOWER referentni primjer iz t\_case3p\_a:
+\begin{lyxcode}
+A:~P~=~1341.42,~Q~=~970.52,~mag~=~1655.6922,~angleDeg~=~35.8858
+
+B:~P~=~2096.10,~Q~=~1341.41,~mag~=~2488.5771,~angleDeg~=~32.6174
+
+C:~P~=~2672.34,~Q~=~1894.59,~mag~=~3275.8010,~angleDeg~=~35.3352
+\end{lyxcode}
+U projektu je dodat MatpowerReferenceTest. Test je pokrenut u Release
+konfiguraciji i vratio je:
+\begin{lyxcode}
+MATPOWER~t\_case3p\_a~reference~conversion:~OK
+\end{lyxcode}
+{\large\textcolor{red}{{[}OVDJE UBACITI SLIKU ILI TABELU: MATPOWER
+referentni test / tabela rezultata{]}}}{\large\par}
+
+\section{Build i pokretanje}
+
+Projekat se gradi preko CMake konfiguracije i Visual Studio/MSBuild
+alata. Lokalno je potvrđen Windows Release ALL\_BUILD, uključujući
+glavnu aplikaciju, ordinary DLL plugin, dTwin plugin, dTwin test executable
+targete i MatpowerReferenceTest.
+
+Release output folder:
+\begin{lyxcode}
+C:
+\end{lyxcode}
+Glavna aplikacija:
+\begin{lyxcode}
+SREES\_2026\_Bajramovic\_TPFPC.exe
+\end{lyxcode}
+dTwin plugin:
+\begin{lyxcode}
+SREES\_2026\_Bajramovic\_TPFPC\_dTwinPlugin.dll
+\end{lyxcode}
+Za pokretanje na drugom računaru potrebno je imati podešeno natID
+okruženje ili pripremiti poseban Release paket sa potrebnim DLL zavisnostima.
+Prema uslovima projekta, build treba dodatno potvrditi i na macOS-u
+i na još jednom sistemu. Ta provjera nije potvrđena u ovom izvještaju
+i navedena je kao planirano testiranje.
+
+\section{Zaključak}
+
+Projekat SREES\_2026\_Bajramovic\_TPFPC realizuje čisti trofazni P+jQ
+u polarni konverter. Implementirani su core C++ proračun, natID GUI,
+balanced i unbalanced režim, dense/sparse matrice, threading sa progress
+indikatorom, ordinary DLL plugin, dTwin import plugin i MATPOWER referentna
+validacija P/Q podataka.
+
+Najvažnije ograničenje je da projekat nije puni load-flow solver i
+ne pokušava zamijeniti MATPOWER ili implementirati Newton-Raphson
+postupak. Njegova namjena je jasno određena: konverzija poznatih trofaznih
+P/Q vrijednosti u polarne koordinate i prikaz tih rezultata kroz natID/dTwin
+workflow.
+
+\section{Literatura i reference}
+\begin{enumerate}
+\item natID SDK dokumentacija i lokalni primjeri.
+\item dTwin plugin primjer iz lokalnog natID.Examples
+\item MATPOWER three-phase dokumentacija: https://matpower.org/documentation/howto/three-phase.html
+\item MATPOWER test cases repository: https://github.com/MATPOWER/matpower/tree/master/lib/t
+\item CMake dokumentacija: https://cmake.org/documentation/
+\item C++ standardna biblioteka, posebno funkcije sqrt i atan2 iz cmath.
+\end{enumerate}
+
+\end{document}

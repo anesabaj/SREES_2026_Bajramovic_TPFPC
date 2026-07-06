@@ -1,0 +1,21 @@
+Header:
+	newTab = false
+	drawPlots = true
+end
+
+Model [name="TPFPC voltage plots"]:
+Plots [backColor=auto]:
+	linePlot [xLabel="Bus" yLabel="|V| [p.u.]" name="Voltage magnitude by phase" anchor=TR legend=true nCols=1 anchorX=130 anchorY=35]:
+		@x << busIdPlot
+		@y << vMagPlotA [name="A"]
+		@y << vMagPlotB [name="B"]
+		@y << vMagPlotC [name="C"]
+	end
+
+	linePlot [xLabel="Bus" yLabel="delta [deg]" name="Voltage angle by phase" anchor=TR legend=true nCols=1 anchorX=130 anchorY=35]:
+		@x << busIdPlot
+		@y << anglePlotA [name="A"]
+		@y << anglePlotB [name="B"]
+		@y << anglePlotC [name="C"]
+	end
+end
