@@ -99,45 +99,114 @@
 
 \begin_body
 
+\begin_layout Standard
+
+\change_inserted 622204335 1783374239
+Univerzitet u Sarajevu 
+\end_layout
+
+\begin_layout Standard
+
+\change_inserted 622204335 1783374245
+Elektrotehnički fakultet
+\end_layout
+
+\begin_layout Standard
+
+\change_inserted 622204335 1783374251
+Odsjek za automatiku i elektroniku
+\end_layout
+
+\begin_layout Standard
+
+\change_inserted 622204335 1783374266
+PREDMET:
+ Strukture i režimi rada elektroenergetskih sistema
+\end_layout
+
 \begin_layout Title
 Konvertor trofaznih tokova snaga:
  polarne koordinate
+\change_inserted 622204335 1783374164
+
 \end_layout
 
 \begin_layout Author
-SREES_2026_Bajramovic_TPFPC
+
+\change_inserted 622204335 1783374181
+Anesa Bajramović
 \end_layout
 
 \begin_layout Date
+
+\change_inserted 622204335 1783374196
 Sarajevo,
  2026.
 \end_layout
 
 \begin_layout Standard
+
+\change_inserted 622204335 1783374203
+\begin_inset Newpage newpage
+\end_inset
+
+
+\change_deleted 622204335 1783374630
+
+\end_layout
+
+\begin_layout Author
+
+\change_deleted 622204335 1783374629
+SREES_2026_Bajramovic_TPFPC
+\end_layout
+
+\begin_layout Date
+
+\change_deleted 622204335 1783374629
+Sarajevo,
+ 2026.
+\end_layout
+
+\begin_layout Standard
+
+\change_deleted 622204335 1783374628
 Univerzitet u Sarajevu
 \end_layout
 
 \begin_layout Standard
+
+\change_deleted 622204335 1783374627
 Elektrotehnički fakultet
 \end_layout
 
 \begin_layout Standard
+
+\change_deleted 622204335 1783374626
 Odsjek za automatiku i elektroniku
 \end_layout
 
 \begin_layout Standard
+
+\change_deleted 622204335 1783374626
 Predmet:
  SREES
 \end_layout
 
 \begin_layout Standard
+
+\change_deleted 622204335 1783374624
 Student:
  Bajramović Anesa
 \end_layout
 
 \begin_layout Standard
+
+\change_deleted 622204335 1783374388
 Akronim projekta:
  TPFPC = Three Phase Flow Polar Converter
+\change_unchanged
+
 \end_layout
 
 \begin_layout Section
@@ -1565,18 +1634,42 @@ Vizuelni model crta tri krive,
 
 \begin_layout Standard
 
+\change_inserted 622204335 1783373935
+
 \size large
 \color red
+\begin_inset Graphics
+	filename C:/Users/Korisnik/Work/CppProjects/SREES_2026_Bajramovic_TPFPC/presentation/vm_by_phase.png
+	width 16cm
+
+\end_inset
+
+
+\change_deleted 622204335 1783373910
 [OVDJE UBACITI SLIKU:
  dTwin graf Voltage magnitude by phase nakon rješavanja modela.]
+\change_unchanged
+
 \end_layout
 
 \begin_layout Standard
 
+\change_inserted 622204335 1783373973
+
 \size large
 \color red
+\begin_inset Graphics
+	filename C:/Users/Korisnik/Work/CppProjects/SREES_2026_Bajramovic_TPFPC/presentation/graf_angle_by_phase.png
+	width 16cm
+
+\end_inset
+
+
+\change_deleted 622204335 1783373950
 [OVDJE UBACITI SLIKU:
  dTwin graf Voltage angle by phase nakon rješavanja modela.]
+\change_unchanged
+
 \end_layout
 
 \begin_layout Section
