@@ -1,64 +1,33 @@
-# Presentation Plan
+Plan prezentacije
 
-Plan za kratku prezentaciju od 5-8 minuta.
+1. Uvod i tema projekta
+   Predstaviti naziv projekta SREES_2026_Bajramovic_TPFPC i temu: konvertor trofaznih tokova snaga u polarne koordinate. Ukratko objasniti da je projekat realizovan u C++ uz natID GUI, DLL plugin i dTwin integraciju.
 
-## 1. Tema I Motivacija
+2. Motivacija i cilj
+   Objasniti zašto je korisno analizirati trofazne elektroenergetske sisteme po fazama A, B i C. Naglasiti da polarni oblik omogućava pregled modula i faznog ugla, što je prirodan zapis za napone, admitanse i jednačine tokova snaga.
 
-Predstaviti projekat `SREES_2026_Bajramovic_TPFPC` i cilj: konverzija
-trofaznih vrijednosti `P+jQ` u polarni oblik.
+3. Glavna funkcionalnost projekta
+   Prikazati tok podataka: MATPOWER three-phase .m fajl -> parser -> fazni čvorovi A/B/C -> fazni Ybus -> polarni zapis |Y| i theta -> nelinearne jednačine tokova snaga -> dTwin .dmodl model. Naglasiti da je glavna funkcionalnost projekta MATPOWER-to-dTwin konverzija, dok je P/Q demo pomoćni dio.
 
-## 2. Matematicka Osnova
+4. MATPOWER ulazni podaci
+   Objasniti da se MATPOWER koristi kao izvor strukturisanih three-phase podataka, a ne kao solver. Navesti glavne ulazne sekcije koje parser koristi, kao što su baseMVA, bus3p, line3p, load3p, gen3p i xfmr3p.
 
-Objasniti formule:
+5. Fazni čvorovi i Ybus matrica
+   Objasniti da se svaki fizički bus razvija u fazne čvorove, npr. bus 2 -> 2A, 2B, 2C. Zatim objasniti da se formira fazni Ybus koji uključuje veze između faza i čuva se kao sparse matrica.
 
-```text
-|S| = sqrt(P^2 + Q^2)
-angleDeg = atan2(Q, P) * 180 / pi
-```
+6. Polarne jednačine tokova snaga
+   Predstaviti osnovne jednačine za P_i i Q_i u polarnom obliku. Objasniti razliku između PQ, PV i slack čvorova: PQ ima P i Q jednačinu, PV ima P jednačinu i zadani napon, a slack čvor predstavlja referentni napon i ugao.
 
-Posebno spomenuti total:
+7. natID GUI i threading
+   Objasniti da GUI omogućava izbor MATPOWER .m fajla, izbor izlaznog .dmodl fajla, pokretanje konverzije i prikaz statusa. Naglasiti da se konverzija izvršava u worker thread-u, progress indikator u posebnom thread-u, a GUI thread prikazuje rezultat korisniku.
 
-```text
-Ptotal, Qtotal, |Stotal|, angleTotal
-```
+8. DLL plugin i dTwin integracija
+   Objasniti ordinary DLL plugin kao odvojeni sloj koji izlaže funkciju konverzije. Zatim objasniti dTwin import plugin koji se pojavljuje u Model -> Import i omogućava generisanje .dmodl modela direktno iz dTwin-a.
 
-## 3. Balanced Vs Unbalanced Ulaz
+9. Testiranje i validacija
+   Prikazati testiranje na MATPOWER three-phase slučaju t_case3p_a. Navesti rezultate: 12 faznih čvorova, 9 PQ čvorova, 0 PV čvorova, 3 slack čvora i Ybus sparse nnz = 78. Naglasiti da se generišu .dmodl i .vmodl fajlovi.
 
-Balanced mod koristi unos faze A za sve tri faze. Unbalanced mod dozvoljava
-poseban P/Q unos za A, B i C.
+10. Zaključak
+    Sumirati da projekat ispunjava zahtjeve: C++ implementacija, GUI, konverzija u posebnom thread-u, real-time progress indikator u drugom thread-u, DLL plugin i dTwin integracija. Zaključiti da projekat omogućava automatsku konverziju MATPOWER three-phase ulaza u dTwin model u polarnim koordinatama.
 
-## 4. natID GUI
-
-Pokazati glavni prozor aplikacije: input polja, izbor moda, dugme Convert,
-rezultate po fazama i total rezultate.
-
-## 5. Dense/Sparse Matrice
-
-Objasniti da tok konverzije prolazi kroz dense input/output matrice i sparse
-input/output matrice. Naglasiti da ovo nije Ybus demo.
-
-## 6. Threading I Progress
-
-Spomenuti worker thread za konverziju, progress thread za indikator i siguran
-GUI update preko `gui::thread::asyncExecInMainThread(...)`.
-
-## 7. DLL Plugin
-
-Objasniti ordinary DLL plugin kao nacin da core konverzija bude dostupna izvan
-glavne GUI aplikacije.
-
-## 8. dTwin Plugin Workflow
-
-Pokazati `Model -> Import -> TPFPC Default Converter`, unos P/Q vrijednosti i
-generisanje `.dmodl` modela.
-
-## 9. Test I Validacija
-
-Pokazati balanced i unbalanced test primjere. Spomenuti MATPOWER `t_case3p_a`
-kao referentni izvor realnih trofaznih P/Q podataka, bez poredjenja sa cijelim
-MATPOWER solverom.
-
-## 10. Zakljucak
-
-Zakljuciti da je projekat cist TPFPC konverter: C++/natID GUI, matrice, plugin-i
-i dTwin import tok, bez Newton-Raphson solvera i bez Ybus demo koda.
+Procijenjeno vrijeme prezentovanja: 7 minuta.
