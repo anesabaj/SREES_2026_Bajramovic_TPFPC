@@ -1,0 +1,13 @@
+{
+    "cmake.buildDirectory": "/home/korisnik/natID.RAMDisk/build/MatpowerReferenceTest",
+    "cmake.debugConfig": {
+        "setupCommands": [
+            {
+                "text": "source /home/korisnik/natID.SDK/DevEnv/VSCodeDebugger/debugHelper_unix.py"
+            },
+            {
+                "text": "-enable-pretty-printing"
+            }
+        ]
+    }
+}

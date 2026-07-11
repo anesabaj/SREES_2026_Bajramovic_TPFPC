@@ -34,6 +34,8 @@ std::filesystem::path getDefaultOutputPath()
     const char* tempPath = std::getenv("TEMP");
     if (tempPath == nullptr || *tempPath == '\0')
         tempPath = std::getenv("TMP");
+    if (tempPath == nullptr || *tempPath == '\0')
+        tempPath = std::getenv("TMPDIR");
 
     const std::filesystem::path outputFolder = (tempPath != nullptr && *tempPath != '\0')
         ? std::filesystem::path(tempPath)

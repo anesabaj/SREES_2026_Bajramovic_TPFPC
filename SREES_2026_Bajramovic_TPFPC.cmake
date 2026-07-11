@@ -46,15 +46,31 @@ file(GLOB TPFPC_INC_ARCH ${NATID_SDK_INC}/arch/*.h)
 file(GLOB TPFPC_INC_SC ${NATID_SDK_INC}/sc/*.h)
 file(GLOB TPFPC_INC_SYST ${NATID_SDK_INC}/syst/*.h)
 
+function(tpfpc_link_natid_libraries TPFPC_TARGET_NAME)
+    foreach(TPFPC_LIB_PREFIX IN LISTS ARGN)
+        if(WIN32)
+            if(${TPFPC_LIB_PREFIX}_LIB_DEBUG)
+                target_link_libraries(${TPFPC_TARGET_NAME} debug ${${TPFPC_LIB_PREFIX}_LIB_DEBUG})
+            endif()
+            if(${TPFPC_LIB_PREFIX}_LIB_RELEASE)
+                target_link_libraries(${TPFPC_TARGET_NAME} optimized ${${TPFPC_LIB_PREFIX}_LIB_RELEASE})
+            endif()
+        else()
+            if(${TPFPC_LIB_PREFIX}_LIB_RELEASE)
+                target_link_libraries(${TPFPC_TARGET_NAME} ${${TPFPC_LIB_PREFIX}_LIB_RELEASE})
+            elseif(${TPFPC_LIB_PREFIX}_LIB_DEBUG)
+                target_link_libraries(${TPFPC_TARGET_NAME} ${${TPFPC_LIB_PREFIX}_LIB_DEBUG})
+            endif()
+        endif()
+    endforeach()
+endfunction()
+
 add_library(${TPFPC_PLUGIN_NAME} SHARED ${TPFPC_PLUGIN_SOURCES} ${TPFPC_INCS}
                                       ${TPFPC_INC_TD} ${TPFPC_INC_DENSE} ${TPFPC_INC_SPARSE})
 
 target_compile_definitions(${TPFPC_PLUGIN_NAME} PRIVATE TPFPC_PLUGIN_EXPORTS)
 
-target_link_libraries(${TPFPC_PLUGIN_NAME} debug ${MU_LIB_DEBUG}
-                                             debug ${MATRIX_LIB_DEBUG}
-                                             optimized ${MU_LIB_RELEASE}
-                                             optimized ${MATRIX_LIB_RELEASE})
+tpfpc_link_natid_libraries(${TPFPC_PLUGIN_NAME} MU MATRIX)
 
 setIDEPropertiesForLib(${TPFPC_PLUGIN_NAME})
 
@@ -68,12 +84,7 @@ add_library(${TPFPC_DTWIN_PLUGIN_NAME} SHARED ${TPFPC_DTWIN_PLUGIN_SOURCES} ${TP
 target_compile_definitions(${TPFPC_DTWIN_PLUGIN_NAME} PRIVATE PLUGIN_EXPORTS
     TPFPC_SOURCE_ROOT="${CMAKE_CURRENT_LIST_DIR}")
 
-target_link_libraries(${TPFPC_DTWIN_PLUGIN_NAME} debug ${MU_LIB_DEBUG}
-                                                   debug ${MATRIX_LIB_DEBUG}
-                                                   debug ${NATGUI_LIB_DEBUG}
-                                                   optimized ${MU_LIB_RELEASE}
-                                                   optimized ${MATRIX_LIB_RELEASE}
-                                                   optimized ${NATGUI_LIB_RELEASE})
+tpfpc_link_natid_libraries(${TPFPC_DTWIN_PLUGIN_NAME} MU MATRIX NATGUI)
 
 setIDEPropertiesForLib(${TPFPC_DTWIN_PLUGIN_NAME})
 
@@ -83,10 +94,7 @@ add_executable(${TPFPC_MATPOWER_REFERENCE_TEST_NAME} ${TPFPC_MATPOWER_REFERENCE_
                                                       ${TPFPC_INC_DENSE}
                                                       ${TPFPC_INC_SPARSE})
 
-target_link_libraries(${TPFPC_MATPOWER_REFERENCE_TEST_NAME} debug ${MU_LIB_DEBUG}
-                                                            debug ${MATRIX_LIB_DEBUG}
-                                                            optimized ${MU_LIB_RELEASE}
-                                                            optimized ${MATRIX_LIB_RELEASE})
+tpfpc_link_natid_libraries(${TPFPC_MATPOWER_REFERENCE_TEST_NAME} MU MATRIX)
 
 setIDEPropertiesForExecutable(${TPFPC_MATPOWER_REFERENCE_TEST_NAME})
 add_executable(${TPFPC_MATPOWER_TO_DTWIN_TEST_NAME} ${TPFPC_MATPOWER_TO_DTWIN_TEST_SOURCES}
@@ -106,20 +114,19 @@ add_executable(${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} ${TPFPC_DTWIN_PLUGIN_LOADE
                                                        ${TPFPC_INC_ARCH})
 
 target_compile_definitions(${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} PRIVATE
-    TPFPC_DTWIN_PLUGIN_PATH="$<TARGET_FILE:${TPFPC_DTWIN_PLUGIN_NAME}>"
-    TPFPC_OTHER_BIN_PATH="${HOME_ROOT}/other_bin/bin"
-    TPFPC_OTHER_BIN_GTK_PATH="${HOME_ROOT}/other_bin/bin/GTK")
+    TPFPC_DTWIN_PLUGIN_PATH="$<TARGET_FILE:${TPFPC_DTWIN_PLUGIN_NAME}>")
 
-target_link_libraries(${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} debug ${MU_LIB_DEBUG}
-                                                                  optimized ${MU_LIB_RELEASE})
+tpfpc_link_natid_libraries(${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} MU)
 
-set(TPFPC_RUNTIME_DLL_DIR ${HOME_ROOT}/other_bin/bin)
-foreach(TPFPC_RUNTIME_DLL mainUtils.dll Matrix.dll)
-    add_custom_command(TARGET ${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${TPFPC_RUNTIME_DLL_DIR}/${TPFPC_RUNTIME_DLL}"
-            "$<TARGET_FILE_DIR:${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME}>/${TPFPC_RUNTIME_DLL}")
-endforeach()
+if(WIN32)
+    set(TPFPC_RUNTIME_DLL_DIR ${HOME_ROOT}/other_bin/bin)
+    foreach(TPFPC_RUNTIME_DLL mainUtils.dll Matrix.dll)
+        add_custom_command(TARGET ${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${TPFPC_RUNTIME_DLL_DIR}/${TPFPC_RUNTIME_DLL}"
+                "$<TARGET_FILE_DIR:${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME}>/${TPFPC_RUNTIME_DLL}")
+    endforeach()
+endif()
 
 add_dependencies(${TPFPC_DTWIN_PLUGIN_LOADER_TEST_NAME} ${TPFPC_DTWIN_PLUGIN_NAME})
 
@@ -137,10 +144,7 @@ add_executable(${TPFPC_DTWIN_PLUGIN_GUI_TEST_NAME} ${TPFPC_DTWIN_PLUGIN_GUI_TEST
 target_compile_definitions(${TPFPC_DTWIN_PLUGIN_GUI_TEST_NAME} PRIVATE
     TPFPC_DTWIN_PLUGIN_PATH="$<TARGET_FILE:${TPFPC_DTWIN_PLUGIN_NAME}>")
 
-target_link_libraries(${TPFPC_DTWIN_PLUGIN_GUI_TEST_NAME} debug ${MU_LIB_DEBUG}
-                                                               debug ${NATGUI_LIB_DEBUG}
-                                                               optimized ${MU_LIB_RELEASE}
-                                                               optimized ${NATGUI_LIB_RELEASE})
+tpfpc_link_natid_libraries(${TPFPC_DTWIN_PLUGIN_GUI_TEST_NAME} MU NATGUI)
 
 add_dependencies(${TPFPC_DTWIN_PLUGIN_GUI_TEST_NAME} ${TPFPC_DTWIN_PLUGIN_NAME})
 
@@ -170,11 +174,8 @@ source_group("src\\dTwinPluginLoaderTest" FILES ${TPFPC_DTWIN_PLUGIN_LOADER_TEST
 source_group("src\\dTwinPluginGuiTest" FILES ${TPFPC_DTWIN_PLUGIN_GUI_TEST_SOURCES})
 source_group("src\\tests" FILES ${TPFPC_MATPOWER_REFERENCE_TEST_SOURCES})
 
-target_link_libraries(${TPFPC_NAME} debug ${MU_LIB_DEBUG} debug ${NATGUI_LIB_DEBUG}
-                                  debug ${MATRIX_LIB_DEBUG}
-                                  optimized ${MU_LIB_RELEASE} optimized ${NATGUI_LIB_RELEASE}
-                                  optimized ${MATRIX_LIB_RELEASE}
-                                  ${TPFPC_PLUGIN_NAME})
+tpfpc_link_natid_libraries(${TPFPC_NAME} MU NATGUI MATRIX)
+target_link_libraries(${TPFPC_NAME} ${TPFPC_PLUGIN_NAME})
 
 setTargetPropertiesForGUIApp(${TPFPC_NAME} ${TPFPC_PLIST})
 

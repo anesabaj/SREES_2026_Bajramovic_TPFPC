@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug MatpowerReferenceTest",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/korisnik/natID.RAMDisk/Out/SREES_2026_Bajramovic_TPFPC/Debug/MatpowerReferenceTest",
+            "args": [],
+            "cwd": "/media/sf_Korisnik/Work/CppProjects/SREES_2026_Bajramovic_TPFPC",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "/home/korisnik/natID.SDK/bin/lib:$LD_LIBRARY_PATH"
+                }
+            ],
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

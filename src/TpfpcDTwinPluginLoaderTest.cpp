@@ -1,11 +1,9 @@
-#include <windows.h>
-
 #include <cnt/ListSL.h>
 #include <sc/IPlugin.h>
+#include <syst/LibraryLoader.h>
 
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 
 namespace
@@ -31,40 +29,6 @@ public:
         return *this;
     }
 };
-
-std::wstring toWideString(const char* text)
-{
-    const int size = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
-    if (size <= 0)
-        return {};
-
-    std::wstring result(size - 1, L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, text, -1, result.data(), size);
-    return result;
-}
-
-std::string getLastLibraryError()
-{
-    const DWORD errorCode = GetLastError();
-    LPSTR message = nullptr;
-    const DWORD size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                                      nullptr,
-                                      errorCode,
-                                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                      reinterpret_cast<LPSTR>(&message),
-                                      0,
-                                      nullptr);
-
-    std::ostringstream out;
-    out << "Windows error " << errorCode;
-    if (size != 0 && message != nullptr)
-        out << ": " << message;
-
-    if (message != nullptr)
-        LocalFree(message);
-
-    return out.str();
-}
 
 const char* modelTypeName(sc::IPlugin::ModelType modelType)
 {
@@ -107,32 +71,20 @@ int main()
 {
     TestLog log;
     const char* pluginPath = TPFPC_DTWIN_PLUGIN_PATH;
-    log << "Plugin DLL: " << pluginPath << '\n';
-    log << "Dependency DLL folder: " << TPFPC_OTHER_BIN_PATH << '\n';
-    log << "GTK DLL folder: " << TPFPC_OTHER_BIN_GTK_PATH << '\n';
+    log << "Plugin library: " << pluginPath << '\n';
 
-    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
-    const auto otherBinPath = toWideString(TPFPC_OTHER_BIN_PATH);
-    if (!otherBinPath.empty())
-        AddDllDirectory(otherBinPath.c_str());
-    const auto gtkPath = toWideString(TPFPC_OTHER_BIN_GTK_PATH);
-    if (!gtkPath.empty())
-        AddDllDirectory(gtkPath.c_str());
-
-    HMODULE library = LoadLibraryExA(pluginPath, nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
-    if (library == nullptr)
+    syst::LibraryLoader library;
+    if (!library.load(pluginPath))
     {
-        log << "LoadLibrary: FAILED\n";
-        log << getLastLibraryError() << '\n';
+        log << "Library load: FAILED\n";
         return 1;
     }
-    log << "LoadLibrary: OK\n";
+    log << "Library load: OK\n";
 
-    auto getPluginInterface = reinterpret_cast<GetPluginInterface>(GetProcAddress(library, "getPluginInterface"));
+    auto getPluginInterface = library.getFunctionPtr<GetPluginInterface>("getPluginInterface");
     if (getPluginInterface == nullptr)
     {
         log << "getPluginInterface: FAILED\n";
-        FreeLibrary(library);
         return 2;
     }
     log << "getPluginInterface: OK\n";
@@ -141,7 +93,6 @@ int main()
     if (plugin == nullptr)
     {
         log << "sc::IPlugin pointer: FAILED\n";
-        FreeLibrary(library);
         return 3;
     }
     log << "sc::IPlugin pointer: OK\n";
@@ -185,20 +136,17 @@ int main()
     if (outFileName.empty())
     {
         log << "Generated dmodl path: FAILED\n";
-        FreeLibrary(library);
         return 6;
     }
 
     if (!fileExists(outFileName))
     {
         log << "Generated dmodl file exists: FAILED\n";
-        FreeLibrary(library);
         return 7;
     }
 
     log << "Generated dmodl file exists: OK\n";
     log << "Generated dmodl size: " << fileSize(outFileName) << " bytes\n";
 
-    FreeLibrary(library);
     return callbackCalled && cleanerCalled ? 0 : 8;
 }
